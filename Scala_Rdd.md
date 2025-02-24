@@ -462,6 +462,130 @@ z: org.apache.spark.rdd.RDD[(String, (Int, Int))] = MapPartitionsRDD[36] at join
 scala> val z = x.join(y).collect()
 z: Array[(String, (Int, Int))] = Array((a,(1,3)), (a,(1,4)), (b,(2,5)))
 ```
+# This is transforming to rdd -> base class-> data frame
+```
+Pratical-1:
+scala> val rdd1 = sc.textFile("C:/Users/abhir/Downloads/xbox(in).csv")
+rdd1: org.apache.spark.rdd.RDD[String] = C:/Users/abhir/Downloads/xbox(in).csv MapPartitionsRDD[1] at textFile at <console>:23
+
+scala> rdd1.first
+res0: String = ,95,2.927373,jake7870,0,95,117.5,,,,
+
+// SQL Context entry point for working with structured data
+ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+
+//this is used to implicitly convert an RDD to a DataFrame.
+import sqlContext.implicits._
+
+//Import Spark SQL data types ad Row
+import org.apache.spark.sql._
+
+//define the schema using case class
+case class Auction(auctionid: String, bid: Float, bidtime: Float, bidder: String, bidderrate: Integer, openbid: Float, price: Float)
+
+// create an RDD of Auction objects
+val rdd2 = rdd1.map(_.split(",")).map(p => Auction(p(0),p(1).toFloat,p(2).toFloat,p(3),p(4).toInt,p(5).toFloat,p(6).toFloat))
+
+// change rdd to dataframe
+val auction = rdd2.toDF()
+
+// prints the output
+auction.show() == rdd.collect() == select * from tablename
+
+// describe the schema
+auction.printSchema()
+
+auction.select("bidderrate").show()
+```
+# Few examples of data frame using Scala
+1.Creating the DataFrame in scala using 
+
+`->  val df = scala.read.format("csv").option("header","true").option("inferSchema","true").load("file_location)` 
+
+this is for loading the data frame from the scala 
+
+
+
+1.View head of the matches of the table
+
+ `IplDataSet.show(5)` 
+
+2.Total number of matches played in ipl editions between 2008 and 2017
+
+```
+// Filter matches between 2008 and 2017 and count them
+val totalMatches = df.filter(col("season").between(2008, 2017)).count()
+
+// Print the result
+println(s"Total number of matches played between 2008 and 2017: $totalMatches")
+```
+3.team wins count across all seasons for all teams
+
+```
+ipl.groupBy("winner").count().orderBy(desc("count")).show()
++--------------------+-----+
+|              winner|count|
++--------------------+-----+
+|      Mumbai Indians|  120|
+| Chennai Super Kings|  106|
+|Kolkata Knight Ri...|   99|
+|Royal Challengers...|   91|
+|     Kings XI Punjab|   88|
+|    Rajasthan Royals|   81|
+|    Delhi Daredevils|   67|
+| Sunrisers Hyderabad|   66|
+|     Deccan Chargers|   29|
+|      Delhi Capitals|   19|
+|       Gujarat Lions|   13|
+|       Pune Warriors|   12|
+|Rising Pune Super...|   10|
+|Kochi Tuskers Kerala|    6|
+|Rising Pune Super...|    5|
+|                  NA|    4|
++--------------------+-----+
+```
+4.matches decision was determined by dl method for each team
+
+```
+val dl = ipl.filter("method =='DL'").groupBy("winner").count().show()
++--------------------+-----+
+|              winner|count|
++--------------------+-----+
+| Sunrisers Hyderabad|    2|
+| Chennai Super Kings|    2|
+|Kochi Tuskers Kerala|    1|
+|    Rajasthan Royals|    1|
+|Royal Challengers...|    3|
+|Kolkata Knight Ri...|    4|
+|Rising Pune Super...|    2|
+|     Kings XI Punjab|    2|
+|    Delhi Daredevils|    2|
++--------------------+-----+
+
+dl: Unit = ()
+```
+
+
+5.max win by runs margins for all teams across all years
+
+
+
+6.max win by wickets margins for all teams across all years
+
+7.most player of the match award
+
+8.Bowler with maximum wides
+
+9.cities which have hosted the maximum nunber of matches in ipl editions btwn 2008 and 2017 
+
+10.venue which have hosted the maximum number of the matches in ipl editions btwn 2008 and 2017 
+
+11.most caught and bowled by a bowler 
+
+12.most caught by a player by a bowler
+
+13. bowler with  maximum wickets
+
 
 
 
